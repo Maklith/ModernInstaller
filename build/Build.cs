@@ -1,12 +1,15 @@
 
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using Nuke.Common;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Serilog;
+using SharpCompress.Archives;
+using SharpCompress.Archives.SevenZip;
 
 class Build : NukeBuild
 {
@@ -22,8 +25,17 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     public static Guid uuid = Guid.NewGuid();
-
+    Target PrepareNative=>_=>_
+        .Executes(() =>
+        {
+            if (!File.Exists(RootDirectory/"Natives"/"Windows-x86"/"av_libglesv2.lib"))
+            {
+                using var sevenZipArchive = SevenZipArchive.Open(RootDirectory/"Natives"/"Windows-x86"/"Windows-x86.7z");
+                sevenZipArchive.ExtractToDirectory(RootDirectory/"Natives"/"Windows-x86");
+            }
+        });
     Target BuildNativeUninstaller => _ => _
+        .DependsOn(PrepareNative)
         .Executes(() =>
         {
             File.WriteAllText("Assets\\ApplicationUUID",uuid.ToString());

@@ -77,6 +77,13 @@
         <Link>Assets\Agreement.txt</Link>
       </EmbeddedResource>
     </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Update="Views\CustomDemoDialog.axaml.cs">
+        <DependentUpon>CustomDemoDialog.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+    </ItemGroup>
 
   
     

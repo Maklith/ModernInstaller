@@ -14,6 +14,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -124,7 +125,7 @@ public partial class MainWindowViewModel : ObservableValidator
         timer.Elapsed += (sender, args) =>
         {
             
-            if (NowProgress<=maxProgress)
+            if (NowProgress<maxProgress)
             {
                 NowProgress++;
             }
@@ -134,101 +135,131 @@ public partial class MainWindowViewModel : ObservableValidator
         {
             maxProgress = 50;
             Assembly assembly = Assembly.GetExecutingAssembly();
-            Directory.CreateDirectory(InstallPath);
-            using (var manifestResourceStream = assembly.GetManifestResourceStream("ModernInstaller.Assets.App.zip"))
+
+            try
             {
-                ZipFile.ExtractToDirectory(manifestResourceStream, InstallPath, true);
+                Directory.CreateDirectory(InstallPath);
+                using (var manifestResourceStream = assembly.GetManifestResourceStream("ModernInstaller.Assets.App.zip"))
+                {
+                    ZipFile.ExtractToDirectory(manifestResourceStream, InstallPath, true);
+                }
+            }
+            catch (Exception e)
+            {
+                ShowInfo("解压程序时出现错误,安装被中止");
+                return;
             }
 
             maxProgress = 70;
-            using (var manifestResourceStream =
-                   assembly.GetManifestResourceStream(
-                       "ModernInstaller.Assets.ModernInstaller.Uninstaller.exe"))
+            try
             {
-                using (var fileStream = new FileStream(Path.Combine(InstallPath, "ModernInstaller.Uninstaller.exe"),
-                           FileMode.Create))
+                using (var manifestResourceStream =
+                       assembly.GetManifestResourceStream(
+                           "ModernInstaller.Assets.ModernInstaller.Uninstaller.exe"))
                 {
-                    manifestResourceStream.CopyTo(fileStream);
-                }
+                    using (var fileStream = new FileStream(Path.Combine(InstallPath, "ModernInstaller.Uninstaller.exe"),
+                               FileMode.Create))
+                    {
+                        manifestResourceStream.CopyTo(fileStream);
+                    }
 
+                }
+            }
+            catch (Exception e)
+            {
+                ShowInfo("创建卸载程序时出现错误,安装被中止");
+                return;
             }
 
-            maxProgress = 100;
-            using (var manifestResourceStream =
-                   assembly.GetManifestResourceStream("ModernInstaller.Assets.ApplicationUUID"))
+            maxProgress = 90;
+            try
             {
-                var bytes = new byte[manifestResourceStream.Length];
-                manifestResourceStream.Read(bytes, 0, bytes.Length);
-                var s = Encoding.UTF8.GetString(bytes);
-                using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,Is64? RegistryView.Registry64: RegistryView.Registry32).OpenSubKey(
-                           "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\",
-                           RegistryKeyPermissionCheck.ReadWriteSubTree))
+                using (var manifestResourceStream =
+                       assembly.GetManifestResourceStream("ModernInstaller.Assets.ApplicationUUID"))
                 {
-                    using (var registryKey = openSubKey.CreateSubKey($$"""{{{s}}}_ModernInstaller"""))
+                    var bytes = new byte[manifestResourceStream.Length];
+                    manifestResourceStream.Read(bytes, 0, bytes.Length);
+                    var s = Encoding.UTF8.GetString(bytes);
+                    using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,Is64? RegistryView.Registry64: RegistryView.Registry32).OpenSubKey(
+                               "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\",
+                               RegistryKeyPermissionCheck.ReadWriteSubTree))
                     {
-                        using (var infoJsonS =
-                               assembly.GetManifestResourceStream("ModernInstaller.Assets.Installer.info.json"))
+                        using (var registryKey = openSubKey.CreateSubKey($$"""{{{s}}}_ModernInstaller"""))
                         {
-                            var bytes2 = new byte[infoJsonS.Length];
-                            infoJsonS.Read(bytes2, 0, bytes2.Length);
-                            var s2 = Encoding.UTF8.GetString(bytes2);
-                            var deserialize =
-                                JsonSerializer.Deserialize<Info>(s2, SourceGenerationContext.Default.Info);
-                            registryKey.SetValue("DisplayName", deserialize.DisplayName);
-                            registryKey.SetValue("DisplayVersion", deserialize.DisplayVersion);
-                            registryKey.SetValue("Publisher", deserialize.Publisher);
-                            registryKey.SetValue("Path", InstallPath);
-                            registryKey.SetValue("UninstallString", InstallPath + "\\ModernInstaller.Uninstaller.exe");
-                            CanExecutePath = deserialize.CanExecutePath;
-                            registryKey.SetValue("MainFile", CanExecutePath);
-                            if (string.IsNullOrWhiteSpace(deserialize.DisplayIcon))
+                            using (var infoJsonS =
+                                   assembly.GetManifestResourceStream("ModernInstaller.Assets.Installer.info.json"))
                             {
-                                registryKey.SetValue("DisplayIcon", InstallPath + "\\" + CanExecutePath + ",0");
-                            }
-                            else
-                            {
-                                registryKey.SetValue("DisplayIcon", deserialize.DisplayIcon);
-                            }
+                                var bytes2 = new byte[infoJsonS.Length];
+                                infoJsonS.Read(bytes2, 0, bytes2.Length);
+                                var s2 = Encoding.UTF8.GetString(bytes2);
+                                var deserialize =
+                                    JsonSerializer.Deserialize<Info>(s2, SourceGenerationContext.Default.Info);
+                                registryKey.SetValue("DisplayName", deserialize.DisplayName);
+                                registryKey.SetValue("DisplayVersion", deserialize.DisplayVersion);
+                                registryKey.SetValue("Publisher", deserialize.Publisher);
+                                registryKey.SetValue("Path", InstallPath);
+                                registryKey.SetValue("UninstallString", InstallPath + "\\ModernInstaller.Uninstaller.exe");
+                                CanExecutePath = deserialize.CanExecutePath;
+                                registryKey.SetValue("MainFile", CanExecutePath);
+                                if (string.IsNullOrWhiteSpace(deserialize.DisplayIcon))
+                                {
+                                    registryKey.SetValue("DisplayIcon", InstallPath + "\\" + CanExecutePath + ",0");
+                                }
+                                else
+                                {
+                                    registryKey.SetValue("DisplayIcon", deserialize.DisplayIcon);
+                                }
 
-                            registryKey.SetValue("InstallDate", DateTime.Now.ToString("yyyy-MM-dd"));
-                            if (File.Exists($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk"))
-                            {
-                                File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk");
-                            }
-
-                            var process1 = new Process();	   
-                            process1.StartInfo.FileName = @"powershell.exe";
-                            process1.StartInfo.RedirectStandardInput = true;
-                            process1.Start();
-                            process1.StandardInput.WriteLine("$WshShell = New-Object -comObject WScript.Shell");
-                            process1.StandardInput.WriteLine($"$Shortcut = $WshShell.CreateShortcut(\"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk\")");
-                            process1.StandardInput.WriteLine($"$Shortcut.TargetPath = \"{InstallPath + "\\" + CanExecutePath}\"");
-                            process1.StandardInput.WriteLine("$Shortcut.Save()");
-                            //shellLink.IconLocation = new IconLocation(InstallPath + "\\" + CanExecutePath, 0);
-                            process1.StandardInput.WriteLine("exit");
-                            process1.WaitForExit();
+                                registryKey.SetValue("InstallDate", DateTime.Now.ToString("yyyy-MM-dd"));
+                                if (File.Exists($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk"))
+                                {
+                                    File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk");
+                                }
+                                maxProgress = 99;
+                                var process1 = new Process();	   
+                                process1.StartInfo.FileName = @"powershell.exe";
+                                process1.StartInfo.UseShellExecute = false;
+                                process1.StartInfo.CreateNoWindow = true;
+                                process1.StartInfo.RedirectStandardInput = true;
+                                process1.Start();
+                                process1.StandardInput.WriteLine("$WshShell = New-Object -comObject WScript.Shell");
+                                process1.StandardInput.WriteLine($"$Shortcut = $WshShell.CreateShortcut(\"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk\")");
+                                process1.StandardInput.WriteLine($"$Shortcut.TargetPath = \"{InstallPath + "\\" + CanExecutePath}\"");
+                                process1.StandardInput.WriteLine("$Shortcut.Save()");
+                                //shellLink.IconLocation = new IconLocation(InstallPath + "\\" + CanExecutePath, 0);
+                                process1.StandardInput.WriteLine("exit");
+                                process1.WaitForExit();
                             
-                            if (File.Exists($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk"))
-                            {
-                                File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk");
-                            }
+                                if (File.Exists($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk"))
+                                {
+                                    File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk");
+                                }
 
-                            var process = new Process();	   
-                            process.StartInfo.FileName = @"powershell.exe";
-                            process.StartInfo.RedirectStandardInput = true;
-                            process.Start();
-                            process.StandardInput.WriteLine("$WshShell = New-Object -comObject WScript.Shell");
-                            process.StandardInput.WriteLine($"$Shortcut = $WshShell.CreateShortcut(\"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk\")");
-                            process.StandardInput.WriteLine($"$Shortcut.TargetPath = \"{InstallPath + "\\" + CanExecutePath}\"");
-                            process.StandardInput.WriteLine($"$Shortcut.Save()");
-                            process.StandardInput.WriteLine("exit");
-                            process.WaitForExit();
-                            //shellLin2k.IconLocation = new IconLocation(InstallPath + "\\" + CanExecutePath, 0);
+                                var process = new Process();	   
+                                process.StartInfo.FileName = @"powershell.exe";
+                                process.StartInfo.RedirectStandardInput = true;
+                                process.StartInfo.UseShellExecute = false;
+                                process.StartInfo.CreateNoWindow = true;
+                                process.Start();
+                                process.StandardInput.WriteLine("$WshShell = New-Object -comObject WScript.Shell");
+                                process.StandardInput.WriteLine($"$Shortcut = $WshShell.CreateShortcut(\"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk\")");
+                                process.StandardInput.WriteLine($"$Shortcut.TargetPath = \"{InstallPath + "\\" + CanExecutePath}\"");
+                                process.StandardInput.WriteLine($"$Shortcut.Save()");
+                                process.StandardInput.WriteLine("exit");
+                                process.WaitForExit();
+                                maxProgress = 100;
+                                //shellLin2k.IconLocation = new IconLocation(InstallPath + "\\" + CanExecutePath, 0);
+                            }
                         }
                     }
                 }
-            }
 
+            }
+            catch (Exception e)
+            {
+                ShowInfo("写入注册表或创建快捷方式时出现错误,安装被中止");
+                return;
+            }
             NowAfterInstall = true;
             NowInstall = false;
         });
@@ -297,5 +328,18 @@ public partial class MainWindowViewModel : ObservableValidator
         ShellExecute(IntPtr.Zero, "open", CanExecutePath, "", InstallPath,
             1);
         Environment.Exit(0);
+    }
+    private async Task ShowInfo(string info)
+    {
+        if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime applicationLifetime)
+        {
+            await Dispatcher.UIThread.InvokeAsync((async () =>
+            {
+                var customDemoDialog = new CustomDemoDialog();
+                customDemoDialog.DataContext = new CustomDemoDialogViewModel(info);
+                await customDemoDialog.ShowDialog(applicationLifetime.MainWindow);
+            }));
+            
+        }
     }
 }

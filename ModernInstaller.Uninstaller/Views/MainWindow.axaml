@@ -21,6 +21,7 @@
     <u:UrsaWindow.Resources>
     </u:UrsaWindow.Resources>
     <Panel>
+        <u:OverlayDialogHost x:Name="DialogHost"></u:OverlayDialogHost>
         <Grid IsVisible="{Binding NowBeforeInstall}" RowDefinitions="*,Auto" Margin="10,10,10,10">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
 

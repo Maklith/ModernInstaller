@@ -31,7 +31,7 @@ sealed class Program
     {
         //检查当前程序是否在TEMP目录
        
-        if ( AppContext.BaseDirectory != Path.GetTempPath())
+        if (!Debugger.IsAttached&& AppContext.BaseDirectory != Path.GetTempPath())
         {
             //复制此程序到TEMP目录,并退出
             Directory.CreateDirectory(Path.GetTempPath());

@@ -13,14 +13,18 @@ using System.Timers;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using ModernInstaller.Models;
+using ModernInstaller.Uninstaller.ViewModels;
+using ModernInstaller.Uninstaller.Views;
+using Ursa.Controls;
 
 namespace ModernInstaller.ViewModels;
 
-public partial class MainWindowViewModel : ObservableValidator
+public partial class MainWindowViewModel : ObservableObject
 {
     [ObservableProperty] private bool nowBeforeInstall = true;
     [ObservableProperty] private bool nowInstall = false;
@@ -33,44 +37,54 @@ public partial class MainWindowViewModel : ObservableValidator
     private string MainFileFullPath =string.Empty;
     private string Path =string.Empty;
     public MainWindowViewModel()
-    { 
-       
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        using (var infoJsonS =
-               assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.Installer.info.json"))
+    {
+        Task.Run((() =>
         {
-            var bytes2 = new byte[infoJsonS.Length];
-            infoJsonS.Read(bytes2, 0, bytes2.Length);
-            var s2 = Encoding.UTF8.GetString(bytes2);
-            var deserialize = JsonSerializer.Deserialize<Info>(s2,SourceGenerationContext.Default.Info);
-            Is64 = deserialize.Is64;
-        }
-        using ( var manifestResourceStream = assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.ApplicationUUID"))
-        {
-            var bytes = new byte[manifestResourceStream.Length];
-            manifestResourceStream.ReadExactly(bytes, 0, bytes.Length);
-            var s = Encoding.UTF8.GetString(bytes);
-            var lpSubKey = $$"""SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{{{s}}}_ModernInstaller""";
-            Console.WriteLine(lpSubKey);
-            using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,Is64? RegistryView.Registry64: RegistryView.Registry32).OpenSubKey(
-                       lpSubKey))
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            using (var infoJsonS =
+                   assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.Installer.info.json"))
             {
-                if (openSubKey is null)
-                {
-                    Console.WriteLine("openSubKey is null");
-                }
-                Console.WriteLine(openSubKey.ToString());
-             
-                AppName= openSubKey.GetValue("DisplayName").ToString();
-                MainFileFullPath=openSubKey.GetValue("Path").ToString()+"\\"+openSubKey.GetValue("MainFile").ToString();
-                Path=openSubKey.GetValue("Path").ToString();
-                
+                var bytes2 = new byte[infoJsonS.Length];
+                infoJsonS.Read(bytes2, 0, bytes2.Length);
+                var s2 = Encoding.UTF8.GetString(bytes2);
+                var deserialize = JsonSerializer.Deserialize<Info>(s2, SourceGenerationContext.Default.Info);
+                Is64 = deserialize.Is64;
             }
-         
-            
-            // ZipFile.ExtractToDirectory(manifestResourceStream,InstallPath,true);
-        }
-       
+
+            using (var manifestResourceStream =
+                   assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.ApplicationUUID"))
+            {
+                var bytes = new byte[manifestResourceStream.Length];
+                manifestResourceStream.ReadExactly(bytes, 0, bytes.Length);
+                var s = Encoding.UTF8.GetString(bytes);
+                var lpSubKey = $$"""SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{{{s}}}_ModernInstaller""";
+                Console.WriteLine(lpSubKey);
+                using (var openSubKey = RegistryKey
+                           .OpenBaseKey(RegistryHive.LocalMachine,
+                               Is64 ? RegistryView.Registry64 : RegistryView.Registry32).OpenSubKey(
+                               lpSubKey))
+                {
+                    if (openSubKey is null)
+                    {
+                        ShowInfo("安装程序未找到");
+                        return;
+                    }
+
+                    Console.WriteLine(openSubKey.ToString());
+
+                    AppName = openSubKey.GetValue("DisplayName").ToString();
+                    MainFileFullPath = openSubKey.GetValue("Path").ToString() + "\\" +
+                                       openSubKey.GetValue("MainFile").ToString();
+                    Path = openSubKey.GetValue("Path").ToString();
+
+                }
+
+
+                // ZipFile.ExtractToDirectory(manifestResourceStream,InstallPath,true);
+            }
+        }));
+
+
     }
     [RelayCommand]
     private async Task Install()
@@ -106,7 +120,8 @@ public partial class MainWindowViewModel : ObservableValidator
                 }
                 catch (Exception exception)
                 {
-
+                    ShowInfo("中止目标进程时出现错误,卸载被中止");
+                    return;
                 }
 
             }
@@ -118,29 +133,47 @@ public partial class MainWindowViewModel : ObservableValidator
             }
             catch (Exception exception)
             {
+                ShowInfo("文件删除时出现错误,卸载被中止");
                 return;
             }
             
            
             minProgress = 0;
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            using (var manifestResourceStream =
-                   assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.ApplicationUUID"))
+            try
             {
-                var bytes = new byte[manifestResourceStream.Length];
-                manifestResourceStream.ReadExactly(bytes, 0, bytes.Length);
-                var s = Encoding.UTF8.GetString(bytes);
-                using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,Is64? RegistryView.Registry64: RegistryView.Registry32).OpenSubKey(
-                           "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\",
-                           RegistryKeyPermissionCheck.ReadWriteSubTree))
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                using (var manifestResourceStream =
+                       assembly.GetManifestResourceStream("ModernInstaller.Uninstaller.Assets.ApplicationUUID"))
                 {
+                    var bytes = new byte[manifestResourceStream.Length];
+                    manifestResourceStream.ReadExactly(bytes, 0, bytes.Length);
+                    var s = Encoding.UTF8.GetString(bytes);
+                    using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,Is64? RegistryView.Registry64: RegistryView.Registry32).OpenSubKey(
+                               "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\",
+                               RegistryKeyPermissionCheck.ReadWriteSubTree))
+                    {
 
-                    openSubKey.DeleteSubKey($$"""{{{s}}}_ModernInstaller""");
+                        openSubKey.DeleteSubKey($$"""{{{s}}}_ModernInstaller""");
+                    }
+                    // ZipFile.ExtractToDirectory(manifestResourceStream,InstallPath,true);
                 }
-                // ZipFile.ExtractToDirectory(manifestResourceStream,InstallPath,true);
             }
-            File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk");
-            File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk");
+            catch (Exception e)
+            {
+                ShowInfo("移除安装注册时出现问题,卸载被中止");
+                return;
+            }
+
+            try
+            {
+                File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Programs)}\\{AppName}.lnk");
+                File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{AppName}.lnk");
+            }
+            catch (Exception e)
+            {
+                ShowInfo("移除快捷方式时出现错误,卸载近乎完成,请手动删除快捷方式");
+                return;
+            }
             NowInstall = false;
             NowAfterInstall = true;
         }));
@@ -151,5 +184,19 @@ public partial class MainWindowViewModel : ObservableValidator
     private void Exit()
     {
         Environment.Exit(0);
+    }
+
+    private async Task ShowInfo(string info)
+    {
+        if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime applicationLifetime)
+        {
+           await Dispatcher.UIThread.InvokeAsync((async () =>
+            {
+                var customDemoDialog = new CustomDemoDialog();
+                customDemoDialog.DataContext = new CustomDemoDialogViewModel(info);
+                await customDemoDialog.ShowDialog(applicationLifetime.MainWindow);
+            }));
+            
+        }
     }
 }

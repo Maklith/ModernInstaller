@@ -1,0 +1,43 @@
+<u:UrsaWindow
+    x:Class="ModernInstaller.Uninstaller.Views.CustomDemoDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:u="https://irihi.tech/ursa"
+    xmlns:viewModels="clr-namespace:ModernInstaller.Uninstaller.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    Width="300"
+    Height="185"
+    IsCloseButtonVisible="False"
+    IsRestoreButtonVisible="False"
+    IsFullScreenButtonVisible="False"
+    IsMinimizeButtonVisible="False"
+    CanResize="False"
+    WindowStartupLocation="CenterOwner"
+    x:DataType="viewModels:CustomDemoDialogViewModel"
+    mc:Ignorable="d">
+    <Grid 
+        Margin="15,5,15,15"
+        RowDefinitions="30, *,Auto">
+        <StackPanel Grid.Row="0" HorizontalAlignment="Left" Orientation="Horizontal" VerticalAlignment="Center">
+            <PathIcon Width="24" Height="24" Foreground="{DynamicResource SemiRed6}"  Data="{StaticResource SemiIconAlertCircle}"></PathIcon>
+            <TextBlock 
+                VerticalAlignment="Center"
+                Grid.Row="0"
+                FontSize="20"
+                Foreground="{DynamicResource SemiRed6}"
+                FontWeight="Bold"
+                Text="错误" />
+        </StackPanel>
+       
+        <TextBlock FontSize="18"  VerticalAlignment="Center" HorizontalAlignment="Center"
+                   Grid.Row="1"
+                   Text="{Binding  Info}" TextWrapping="WrapWithOverflow" />
+        <StackPanel Grid.Row="2" HorizontalAlignment="Right">
+            <Button Classes="Danger" Theme="{DynamicResource SolidButton}" Command="{Binding ExitCommand}">确定</Button>
+        </StackPanel>
+    </Grid>
+
+</u:UrsaWindow>
