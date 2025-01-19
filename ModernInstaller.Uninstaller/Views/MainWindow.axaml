@@ -1,0 +1,77 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:ModernInstaller.ViewModels"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              xmlns:system="clr-namespace:System;assembly=System.Runtime"
+              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+              x:Class="ModernInstaller.Views.MainWindow"
+              x:DataType="vm:MainWindowViewModel"
+              IsFullScreenButtonVisible="False"
+              IsRestoreButtonVisible="False"
+              CanResize="False"
+              WindowStartupLocation="CenterScreen"
+              Width="600"
+              Height="370"
+              Icon="../Assets/Installer/IconUninstall.png"
+              IsCloseButtonVisible="{Binding !NowInstall}"
+              Title="ModernInstaller">
+
+    <u:UrsaWindow.Resources>
+    </u:UrsaWindow.Resources>
+    <Panel>
+        <Grid IsVisible="{Binding NowBeforeInstall}" RowDefinitions="*,Auto" Margin="10,10,10,10">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+
+                <Image ZIndex="1" Height="96" Width="96" Source="../Assets/Installer/Icon.png">
+                    <Image.Effect>
+                        <DropShadowEffect
+                            BlurRadius="10"
+                            Color="#FFA7D1E2" />
+                    </Image.Effect>
+                </Image>
+                <Label HorizontalAlignment="Center" HorizontalContentAlignment="Center"
+                       Margin="0,15,0,0"
+                       Classes="Secondary" Content="{Binding AppName}" FontSize="16">
+                </Label>
+                <Button Classes="Danger" Content="卸载程序" Height="40" Width="150" FontSize="15" Command="{Binding InstallCommand}"></Button>
+                
+            </StackPanel>
+        </Grid>
+        <Grid IsVisible="{Binding NowInstall}" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="10">
+                <Label HorizontalAlignment="Center" 
+                       Content="卸载中.."  Classes="H4"
+                       Theme="{StaticResource TitleLabel}">
+                </Label>
+                <ProgressBar
+                    Width="300" Classes="Danger" 
+                    Maximum="100"
+                    Minimum="0" 
+                    ShowProgressText="True"
+                    Value="{Binding NowProgress}" />
+            </StackPanel>
+        </Grid>
+        <Grid IsVisible="{Binding NowAfterInstall}" RowDefinitions="*,Auto" Margin="10,10,10,10">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+
+                <Image ZIndex="1" Height="96" Width="96" Source="../Assets/Installer/Icon.png">
+                    <Image.Effect>
+                        <DropShadowEffect
+                            BlurRadius="10"
+                            Color="#FFA7D1E2" />
+                    </Image.Effect>
+                </Image>
+                <Label HorizontalAlignment="Center" HorizontalContentAlignment="Center"
+                       Margin="0,15,0,0"
+                       Classes="Secondary" Content="{Binding AppName}" FontSize="16">
+                </Label>
+                <Button Classes="Danger" Content="完成卸载" Height="40" Width="150" FontSize="15" Command="{Binding ExitCommand}"></Button>
+                
+            </StackPanel>
+        </Grid>
+    </Panel>
+
+
+</u:UrsaWindow>

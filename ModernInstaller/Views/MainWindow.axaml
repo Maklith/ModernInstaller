@@ -1,0 +1,119 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:ModernInstaller.ViewModels"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              xmlns:system="clr-namespace:System;assembly=System.Runtime"
+              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+              x:Class="ModernInstaller.Views.MainWindow"
+              x:DataType="vm:MainWindowViewModel"
+              IsFullScreenButtonVisible="False"
+              IsRestoreButtonVisible="False"
+              CanResize="False"
+              WindowStartupLocation="CenterScreen"
+              Width="600"
+              Height="370"
+              Icon="../Assets/Installer/IconPack.png"
+              IsCloseButtonVisible="{Binding !NowInstall}"
+              Title="ModernInstaller">
+
+    <u:UrsaWindow.Resources>
+    </u:UrsaWindow.Resources>
+    <Panel>
+        <Grid IsVisible="{Binding NowBeforeInstall}" RowDefinitions="*,Auto" Margin="10,60,10,10">
+            <StackPanel HorizontalAlignment="Center" Spacing="5">
+
+                <Image ZIndex="1" Height="96" Width="96" Source="../Assets/Installer/Icon.png">
+                    <Image.Effect>
+                        <DropShadowEffect
+                            BlurRadius="10"
+                            Color="#FFA7D1E2" />
+                    </Image.Effect>
+                </Image>
+                <Label HorizontalAlignment="Center" HorizontalContentAlignment="Center"
+                       Margin="0,15,0,0"
+                       Classes="Secondary" Content="{Binding AppName}" FontSize="16">
+                </Label>
+                <StackPanel HorizontalAlignment="Center" Spacing="5" IsVisible="{Binding !ShowDetail}">
+                    <Button Content="一键安装" Height="40" Width="150" FontSize="15" Command="{Binding InstallCommand}"></Button>
+                    <TextBlock Classes="Danger"
+                               HorizontalAlignment="Center"
+                               IsVisible="{Binding !CanInstall}"
+                               Text="{Binding CantInstallReason,Mode=OneWay}">
+                    </TextBlock>
+                    <Button Classes="Primary" Theme="{DynamicResource BorderlessButton}"
+                            Command="{Binding ShowDetailCCommand}">
+                        更多安装选项
+                    </Button>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center" Spacing="5" IsVisible="{Binding ShowDetail}">
+                    <StackPanel Spacing="3" Orientation="Horizontal">
+                        <TextBox Text="{Binding InstallPath}"
+                                 MinWidth="300">
+                        </TextBox>
+
+                        <Button Content="修改" FontSize="15" Command="{Binding PickFolderCommand}"></Button>
+                    </StackPanel>
+                    <TextBlock Classes="Danger" IsVisible="{Binding !CanInstall}"
+                               Text="{Binding CantInstallReason,Mode=OneWay}">
+                    </TextBlock>
+                    <Button Content="安装" Height="40" Width="150" FontSize="15" Command="{Binding InstallCommand}" />
+                </StackPanel>
+
+
+            </StackPanel>
+            <DockPanel Grid.Row="1">
+
+                <CheckBox DockPanel.Dock="Left" IsChecked="{Binding Agreed}">
+                    <CheckBox.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center">我已阅读并同意</Label>
+                            <Button Classes="Primary" Theme="{DynamicResource BorderlessButton}" 
+                                    Padding="0" Command="{Binding ShowAgreementCommand}"
+                                    CommandParameter="{Binding $parent[Window]}">《用户协议》</Button>
+                        </StackPanel>
+                    </CheckBox.Content>
+                </CheckBox>
+            </DockPanel>
+        </Grid>
+        <Grid IsVisible="{Binding NowInstall}" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="10">
+                <Label HorizontalAlignment="Center" 
+                       Content="安装中.."  Classes="H4"
+                       Theme="{StaticResource TitleLabel}">
+                </Label>
+                <ProgressBar
+                    Width="300"
+                    Maximum="100"
+                    Minimum="0" 
+                    ShowProgressText="True"
+                    Value="{Binding NowProgress}" />
+            </StackPanel>
+        </Grid>
+        <Grid IsVisible="{Binding NowAfterInstall}" RowDefinitions="*,Auto" Margin="10,10,10,10">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+
+                <Image ZIndex="1" Height="96" Width="96" Source="../Assets/Installer/Icon.png">
+                    <Image.Effect>
+                        <DropShadowEffect
+                            BlurRadius="10"
+                            Color="#FFA7D1E2" />
+                    </Image.Effect>
+                </Image>
+                <Label HorizontalAlignment="Center" HorizontalContentAlignment="Center"
+                       Margin="0,15,0,0"
+                       Classes="Secondary" Content="{Binding AppName}" FontSize="16">
+                </Label>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button  Content="完成安装" Height="40" Width="150" FontSize="15" Command="{Binding JustCloseCommand}"></Button>
+                    <Button Theme="{DynamicResource SolidButton}" Content="立即体验" Height="40" Width="150" FontSize="15" Command="{Binding CloseAndLaunchCommand}"></Button>
+                </StackPanel>
+                
+                
+            </StackPanel>
+        </Grid>
+    </Panel>
+
+
+</u:UrsaWindow>

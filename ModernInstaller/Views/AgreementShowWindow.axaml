@@ -1,0 +1,18 @@
+﻿<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              xmlns:viewModels="clr-namespace:ModernInstaller.ViewModels"
+              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+              x:Class="ModernInstaller.Views.AgreementShowWindow"
+              IsFullScreenButtonVisible="False"
+              IsRestoreButtonVisible="False"
+              WindowStartupLocation="CenterScreen"
+              x:DataType="viewModels:AgreementShowWindowViewModel"
+              Title="用户协议">
+    <ScrollViewer Margin="10,30,10,10" HorizontalScrollBarVisibility="Disabled">
+        <TextBox IsReadOnly="True" Text="{Binding Text}" TextWrapping="WrapWithOverflow"></TextBox>
+    </ScrollViewer>
+    
+</u:UrsaWindow>

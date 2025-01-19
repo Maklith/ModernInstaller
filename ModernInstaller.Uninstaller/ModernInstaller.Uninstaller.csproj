@@ -1,0 +1,64 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <PublishAot>true</PublishAot>
+        <PublishAotSingleFile>true</PublishAotSingleFile>
+        <SupportedOSPlatformVersion>5.1</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion>5.1</TargetPlatformMinVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <ApplicationIcon>..\Assets\IconUninstall.ico</ApplicationIcon>
+        <IncludeNativeLibrariesInSingleFile>true</IncludeNativeLibrariesInSingleFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\HarmonyOS_Sans_SC_Regular.ttf"/>
+        <AvaloniaResource Include="Assets\Installer\**"/>
+    </ItemGroup>
+    <ItemGroup Label="AotSingleFile" Condition="'$(RuntimeIdentifier)' == 'win-x86'">
+        <DirectPInvoke Include="libHarfBuzzSharp" />
+        <NativeLibrary Include="..\Natives\Windows-x86\libHarfBuzzSharp.lib" />
+        <DirectPInvoke Include="libSkiaSharp" />
+        <NativeLibrary Include="..\Natives\Windows-x86\libSkiaSharp.lib" />
+        <DirectPInvoke Include="av_libglesv2" />
+        <NativeLibrary Include="..\Natives\Windows-x86\av_libglesv2.lib" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.2.3"/>
+        <PackageReference Include="Avalonia.Desktop" Version="11.2.3"/>
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.3"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+        <PackageReference Include="Irihi.Ursa" Version="1.7.0" />
+        <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.7.0" />
+        <PackageReference Include="Semi.Avalonia" Version="11.2.1.3" />
+        <PackageReference Include="YY-Thunks" Version="1.1.5" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="..\Assets\ApplicationUUID">
+        <Link>Assets\ApplicationUUID</Link>
+      </EmbeddedResource>
+      <AvaloniaResource Include="..\Assets\Icon.png">
+        <Link>Assets\Installer\Icon.png</Link>
+      </AvaloniaResource>
+      <AvaloniaResource Include="..\Assets\IconUninstall.png">
+        <Link>Assets\Installer\IconUninstall.png</Link>
+      </AvaloniaResource>
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="..\Assets\info.json">
+        <Link>Assets\Installer\info.json</Link>
+      </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="..\Assets\IconUninstall.ico">
+        <Link>IconUninstall.ico</Link>
+      </None>
+    </ItemGroup>
+
+  
+    
+</Project>
