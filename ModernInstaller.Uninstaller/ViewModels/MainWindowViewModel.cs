@@ -114,17 +114,29 @@ public partial class MainWindowViewModel : ObservableObject
                 {
                     if (e.MainModule != null && e.MainModule.FileName == MainFileFullPath)
                     {
-                        e.Kill();
-                        break;
+                        try
+                        {
+                            e.Kill();
+                            while (!e.HasExited)
+                            {
+                                
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            ShowInfo("中止目标进程时出现错误,卸载被中止");
+                            return;
+                        }
+
                     }
                 }
                 catch (Exception exception)
                 {
-                    ShowInfo("中止目标进程时出现错误,卸载被中止");
-                    return;
+                    
                 }
 
             }
+           
 
             minProgress = 50;
             try
