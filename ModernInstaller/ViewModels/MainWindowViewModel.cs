@@ -23,7 +23,7 @@ using ModernInstaller.Views;
 
 namespace ModernInstaller.ViewModels;
 
-public partial class MainWindowViewModel : ObservableValidator
+public partial class MainWindowViewModel : ObservableObject
 {
     [ObservableProperty] private bool nowUnstall;
     [ObservableProperty] private bool nowBeforeInstall = true;
@@ -101,7 +101,16 @@ public partial class MainWindowViewModel : ObservableValidator
             var appName = deserialize.DisplayName;
             Is64 = deserialize.Is64;
             AppName = appName;
-            InstallPath = Is64 ? $"{Environment.GetEnvironmentVariable("ProgramFiles", EnvironmentVariableTarget.Machine)}\\{appName}" : $"{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)}\\{appName}";
+            if (Environment.Is64BitOperatingSystem&&Is64)
+            {
+                using (var openSubKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(
+                           "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+                           RegistryKeyPermissionCheck.ReadWriteSubTree))
+                {
+                    InstallPath =$"{openSubKey.GetValue( "ProgramFilesDir").ToString()}\\{appName}";
+                }
+            }else
+                InstallPath =  $"{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)}\\{appName}";
         }
        
     }

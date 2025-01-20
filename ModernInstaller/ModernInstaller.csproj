@@ -14,6 +14,12 @@
         <ApplicationIcon>..\Assets\IconPack.ico</ApplicationIcon>
         <IncludeNativeLibrariesInSingleFile>true</IncludeNativeLibrariesInSingleFile>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <PlatformTarget>x86</PlatformTarget>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <PlatformTarget>x86</PlatformTarget>
+    </PropertyGroup>
     <Target Name="CustomizeLinkedLibs" BeforeTargets="LinkNative" AfterTargets="SetupOSSpecificProps">
         <ItemGroup>
             <LinkerArg Include="/FORCE:MULTIPLE" />
