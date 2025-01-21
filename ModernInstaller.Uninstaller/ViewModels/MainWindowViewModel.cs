@@ -104,38 +104,55 @@ public partial class MainWindowViewModel : ObservableObject
             }
         };
         timer.Start();
-        Task.Run((() =>
+        Task.Run( (async() =>
         {
             minProgress = 70;
             //检查进程是否退出
-            foreach (var e in Process.GetProcesses())
+            uint tryTimes = 0;
+            bool canContinue = false;
+            while (!canContinue)
             {
-                try
+                canContinue = true;
+                foreach (var e in Process.GetProcesses())
                 {
-                    if (e.MainModule != null && e.MainModule.FileName == MainFileFullPath)
+                    try
                     {
-                        try
+                        if (e.MainModule != null && e.MainModule.FileName == MainFileFullPath)
                         {
-                            e.Kill();
-                            while (!e.HasExited)
+                            try
                             {
+                                canContinue = false;
+                                e.Kill();
+                                while (!e.HasExited)
+                                {
                                 
+                                }
                             }
-                        }
-                        catch (Exception exception)
-                        {
-                            ShowInfo("中止目标进程时出现错误,卸载被中止");
-                            return;
-                        }
+                            catch (Exception exception)
+                            {
+                                ShowInfo("中止目标进程时出现错误,卸载被中止");
+                                return;
+                            }
 
+                        }
                     }
-                }
-                catch (Exception exception)
-                {
+                    catch (Exception exception)
+                    {
                     
+                    }
+
                 }
 
+                tryTimes++;
+                if (tryTimes>=10)
+                {
+                    ShowInfo("中止目标进程时出现错误等待太长时间,卸载被中止");
+                    return;
+                }
+
+                await Task.Delay(1000);
             }
+            
            
 
             minProgress = 50;
