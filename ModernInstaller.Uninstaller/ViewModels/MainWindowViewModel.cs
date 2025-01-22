@@ -108,49 +108,10 @@ public partial class MainWindowViewModel : ObservableObject
         {
             minProgress = 70;
             //检查进程是否退出
-            uint tryTimes = 0;
-            bool canContinue = false;
-            while (!canContinue)
+            if (!TryKillProcess(MainFileFullPath))
             {
-                canContinue = true;
-                foreach (var e in Process.GetProcesses())
-                {
-                    try
-                    {
-                        if (e.MainModule != null && e.MainModule.FileName == MainFileFullPath)
-                        {
-                            try
-                            {
-                                canContinue = false;
-                                e.Kill();
-                                while (!e.HasExited)
-                                {
-                                
-                                }
-                            }
-                            catch (Exception exception)
-                            {
-                                ShowInfo("中止目标进程时出现错误,卸载被中止");
-                                return;
-                            }
-
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                    
-                    }
-
-                }
-
-                tryTimes++;
-                if (tryTimes>=10)
-                {
-                    ShowInfo("中止目标进程时出现错误等待太长时间,卸载被中止");
-                    return;
-                }
-
-                await Task.Delay(1000);
+                ShowInfo("中止目标进程时出现错误,卸载被中止");
+                return;
             }
             
            
@@ -208,7 +169,97 @@ public partial class MainWindowViewModel : ObservableObject
         }));
 
     }
+ private bool TryKillProcess(string processFilePath)
+    {
+         // PowerShell 脚本内容，直接嵌入
+        string script = @"
+param(
+    [string]$processFilePath
+)
 
+function TryTerminateProcess {
+    param(
+        [string]$filePath
+    )
+
+    $maxAttempts = 10
+    $attempt = 0
+
+    while ($attempt -lt $maxAttempts) {
+        # 获取所有匹配的进程
+        $processes = Get-Process | Where-Object { $_.MainModule.FileName -eq $filePath }
+
+        if ($processes) {
+            foreach ($process in $processes) {
+                Write-Host '尝试终止进程: ' $process.Name ' [' $process.Id ']'
+                try {
+                    $process.Kill()
+                    Write-Host '成功终止进程: ' $process.Name ' [' $process.Id ']'
+                } catch {
+                    Write-Host '无法终止进程: ' $process.Name ' [' $process.Id ']'
+                }
+            }
+        } else {
+            Write-Host '没有找到匹配的进程。'
+            return '正常退出'
+        }
+
+        # 增加尝试次数
+        $attempt++
+        Write-Host '尝试次数: $attempt'
+
+        # 每秒钟尝试一次
+        Start-Sleep -Seconds 1
+    }
+
+    if ($attempt -eq $maxAttempts) {
+        Write-Host '达到最大尝试次数 ($maxAttempts)，停止尝试终止进程。'
+        return '超出尝试次数'
+    }
+}
+
+# 调用函数来开始反复尝试终止进程
+TryTerminateProcess -filePath $processFilePath
+";
+
+        // 创建一个 Process 用来运行 PowerShell 脚本
+        var process = new Process();
+        process.StartInfo.FileName = "powershell.exe";
+        process.StartInfo.Arguments = $"-Command \"{script}\" -processFilePath \"{processFilePath}\"";
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.RedirectStandardError = true;
+        process.StartInfo.CreateNoWindow = true;
+
+        // 启动进程
+        process.Start();
+
+        // 捕获输出和错误
+        string output = process.StandardOutput.ReadToEnd();
+        string error = process.StandardError.ReadToEnd();
+
+        process.WaitForExit();
+
+        // 输出执行结果
+        Console.WriteLine("Output: ");
+        Console.WriteLine(output);
+
+        // 判断脚本是超出尝试次数还是正常退出
+        if (output.Contains("超出尝试次数"))
+        {
+            return false;
+        }
+        else if (output.Contains("正常退出"))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            return false;
+        }
+        return false;
+    }
     [RelayCommand]
     private void Exit()
     {
