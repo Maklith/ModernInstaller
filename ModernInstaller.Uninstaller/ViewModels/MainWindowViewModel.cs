@@ -8,8 +8,8 @@ using System.Reflection;
 using System.Security.AccessControl;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
@@ -21,6 +21,7 @@ using ModernInstaller.Models;
 using ModernInstaller.Uninstaller.ViewModels;
 using ModernInstaller.Uninstaller.Views;
 using Ursa.Controls;
+using Timer = System.Timers.Timer;
 
 namespace ModernInstaller.ViewModels;
 
@@ -104,38 +105,16 @@ public partial class MainWindowViewModel : ObservableObject
             }
         };
         timer.Start();
-        Task.Run((() =>
+        Task.Run( (async() =>
         {
             minProgress = 70;
             //检查进程是否退出
-            foreach (var e in Process.GetProcesses())
+            if (!await TerminateProcess(MainFileFullPath))
             {
-                try
-                {
-                    if (e.MainModule != null && e.MainModule.FileName == MainFileFullPath)
-                    {
-                        try
-                        {
-                            e.Kill();
-                            while (!e.HasExited)
-                            {
-                                
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            ShowInfo("中止目标进程时出现错误,卸载被中止");
-                            return;
-                        }
-
-                    }
-                }
-                catch (Exception exception)
-                {
-                    
-                }
-
+                ShowInfo("中止目标进程时出现错误,卸载被中止");
+                return;
             }
+            
            
 
             minProgress = 50;
@@ -191,7 +170,94 @@ public partial class MainWindowViewModel : ObservableObject
         }));
 
     }
+    /// <summary>
+    /// 尝试终止指定路径的进程
+    /// </summary>
+    /// <param name="processFilePath">进程文件路径</param>
+    /// <returns>终止结果消息</returns>
+    static async Task<bool> TerminateProcess(string processFilePath)
+    {
+        int maxAttempts = 10;
+        int attempt = 0;
 
+        while (attempt < maxAttempts)
+        {
+            // 获取当前进程列表
+            string taskListCommand = $"wmic process where \"ExecutablePath='{processFilePath.Replace("\\","\\\\")}'\" get ProcessId,Name";
+            var processList = ExecuteCommand(taskListCommand);
+
+            if (string.IsNullOrWhiteSpace(processList))
+            {
+                return true;
+            }
+
+            // 处理每个进程
+            string[] processes = processList.Split(new[] { "\r\n", "\n","\r" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var process in processes)
+            {
+                if (process.StartsWith("Name"))
+                {
+                    continue;
+                }
+                string[] processInfo = process.Split(' ',StringSplitOptions.RemoveEmptyEntries);
+                string processName = processInfo[0];
+                string processId = processInfo[1];
+
+                Console.WriteLine($"尝试终止进程: {processName} [{processId}]");
+
+                string killCommand = $"taskkill /f /pid {processId}";
+                string killResult = ExecuteCommand(killCommand);
+
+                if (killResult.Contains("成功"))
+                {
+                    Console.WriteLine($"成功终止进程: {processName} [{processId}]");
+                }
+                else
+                {
+                    Console.WriteLine($"无法终止进程: {processName} [{processId}]");
+                }
+            }
+
+            attempt++;
+            Console.WriteLine($"尝试次数: {attempt}");
+
+            // 每秒钟等待一次
+            await Task.Delay(1000);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 执行命令并获取输出
+    /// </summary>
+    /// <param name="command">要执行的命令</param>
+    /// <returns>命令的输出结果</returns>
+    static string ExecuteCommand(string command)
+    {
+        try
+        {
+            using (var process = new Process())
+            {
+                process.StartInfo.FileName = "cmd.exe";
+                process.StartInfo.Arguments = $"/C {command}";
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.CreateNoWindow = true;
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                return output;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("执行命令时发生错误: " + ex.Message);
+            return string.Empty;
+        }
+    }
     [RelayCommand]
     private void Exit()
     {
