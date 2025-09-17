@@ -22,9 +22,8 @@
         <DirectPInvoke Include="libHarfBuzzSharp" />
         <NativeLibrary Include="..\Natives\Windows-x86\libHarfBuzzSharp.lib" />
         <DirectPInvoke Include="libSkiaSharp" />
-        <NativeLibrary Include="..\Natives\Windows-x86\libSkiaSharp.lib" />
-        <DirectPInvoke Include="av_libglesv2" />
-        <NativeLibrary Include="..\Natives\Windows-x86\av_libglesv2.lib" />
+        <NativeLibrary Include="..\Natives\Windows-x86\skia.lib" />
+        <NativeLibrary Include="..\Natives\Windows-x86\SkiaSharp.lib" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.2.3"/>

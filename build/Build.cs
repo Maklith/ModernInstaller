@@ -28,7 +28,7 @@ class Build : NukeBuild
     Target PrepareNative=>_=>_
         .Executes(() =>
         {
-            if (!File.Exists(RootDirectory/"Natives"/"Windows-x86"/"av_libglesv2.lib"))
+            if (!File.Exists(RootDirectory/"Natives"/"Windows-x86"/"SkiaSharp.lib"))
             {
                 using var sevenZipArchive = SevenZipArchive.Open(RootDirectory/"Natives"/"Windows-x86"/"Windows-x86.7z");
                 sevenZipArchive.ExtractToDirectory(RootDirectory/"Natives"/"Windows-x86");
