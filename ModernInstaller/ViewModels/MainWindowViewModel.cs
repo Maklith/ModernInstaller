@@ -37,6 +37,7 @@ public partial class MainWindowViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanInstall))]
     [NotifyCanExecuteChangedFor(nameof(InstallCommand))]
     [ObservableProperty] private bool agreed = false;
+    public bool IsSilent { get; set; }
 
     private bool Is64 = false;
     [NotifyPropertyChangedFor(nameof(CanInstall))]
@@ -279,7 +280,7 @@ public partial class MainWindowViewModel : ObservableObject
         await agreementShowWindow.ShowDialog(control);
     }
     [RelayCommand(CanExecute = nameof(CanInstall))]
-    private async Task Install()
+    public async Task Install()
     {
         NowBeforeInstall = false;
         NowInstall = true;
@@ -296,7 +297,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         };
         timer.Start();
-        Task.Run(async () =>
+        await Task.Run(async () =>
         {
             maxProgress = 20;
             
@@ -488,12 +489,22 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void CloseAndLaunch()
     {
-        ShellExecute(IntPtr.Zero, "open", CanExecutePath, "", InstallPath,
-            1);
+        LaunchApplication();
         Environment.Exit(0);
     }
+
+    public void LaunchApplication()
+    {
+        ShellExecute(IntPtr.Zero, "open", CanExecutePath, "", InstallPath, 1);
+    }
+
     private async Task ShowInfo(string info)
     {
+        if (IsSilent)
+        {
+            Console.WriteLine($"[Info]: {info}");
+            return;
+        }
         if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime applicationLifetime)
         {
             await Dispatcher.UIThread.InvokeAsync((async () =>

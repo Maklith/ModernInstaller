@@ -16,8 +16,40 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-            BuildAvaloniaApp()
-                .StartWithClassicDesktopLifetime(args);
+        if (args != null && System.Linq.Enumerable.Contains(args, "--silent"))
+        {
+            try
+            {
+                var viewModel = new ModernInstaller.ViewModels.MainWindowViewModel();
+                viewModel.IsSilent = true;
+                viewModel.Agreed = true;
+
+                if (viewModel.CanInstall)
+                {
+                    System.Console.WriteLine("Starting silent installation...");
+                    viewModel.Install().GetAwaiter().GetResult();
+                    System.Console.WriteLine("Installation complete. Launching application...");
+                    viewModel.LaunchApplication();
+                    return;
+                }
+                else
+                {
+                    System.Console.WriteLine($"Cannot install: {viewModel.CantInstallReason}");
+                    System.Environment.Exit(1);
+                    return;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Console.WriteLine($"Silent installation failed: {ex.Message}");
+                System.Console.WriteLine(ex.StackTrace);
+                System.Environment.Exit(1);
+                return;
+            }
+        }
+
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
